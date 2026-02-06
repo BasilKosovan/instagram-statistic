@@ -2,195 +2,57 @@
 <html lang="uk">
 <head>
   <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="description" content="Аналізатор підписок Instagram - дізнайтеся хто не підписаний на вас у відповідь" />
   <title>Instagram Followers Analyzer</title>
-  <style>
-    body {
-      font-family: Arial, sans-serif;
-      margin: 20px;
-      background: #f7f7f7;
-    }
-
-    textarea {
-      width: 100%;
-      height: 160px;
-      font-family: monospace;
-      margin-bottom: 10px;
-    }
-
-    button {
-      padding: 10px 20px;
-      font-size: 16px;
-      cursor: pointer;
-      margin-bottom: 20px;
-    }
-
-    .section {
-      margin-top: 30px;
-      background: white;
-      border-radius: 6px;
-      box-shadow: 0 2px 5px rgba(0,0,0,0.1);
-    }
-
-    .section-header {
-      padding: 12px;
-      background: #eee;
-      cursor: pointer;
-      font-weight: bold;
-      user-select: none;
-    }
-
-    .section-header:hover {
-      background: #e0e0e0;
-    }
-
-    .section-content {
-      padding: 10px;
-      display: none;
-    }
-
-    table {
-      border-collapse: collapse;
-      width: 100%;
-    }
-
-    th, td {
-      border: 1px solid #ccc;
-      padding: 8px;
-    }
-
-    th {
-      background: #f0f0f0;
-    }
-
-    .not-following {
-      background: #ffe5e5;
-    }
-
-    .count {
-      color: #555;
-      font-weight: normal;
-    }
-  </style>
+  <link rel="stylesheet" href="styles.css" />
 </head>
 <body>
+  <div class="container">
+    <header>
+      <h1>📊 Instagram аналіз підписок</h1>
+      <p class="subtitle">Аналізуйте свої підписки та дізнайтеся хто не підписаний на вас у відповідь</p>
+    </header>
 
-<h1>Instagram аналіз підписок</h1>
+    <main>
+      <!-- Інструкції (завантажуються з окремого файлу) -->
+      <section class="instructions-section" id="instructions-container">
+        <!-- Інструкція буде завантажена з instructions.html -->
+      </section>
 
-<h3>1️⃣ Following (на кого ти підписаний)</h3>
-<textarea id="followingInput"></textarea>
+      <section class="input-section">
+        <h3>1️⃣ Following (на кого ти підписаний)</h3>
+        <div class="input-wrapper">
+          <textarea 
+            id="followingInput" 
+            placeholder="Вставте JSON дані з файлу following.json або масив об'єктів..."
+            aria-label="Following data input"
+          ></textarea>
+        </div>
+      </section>
 
-<h3>2️⃣ Followers (хто підписаний на тебе)</h3>
-<textarea id="followersInput"></textarea>
+      <section class="input-section">
+        <h3>2️⃣ Followers (хто підписаний на тебе)</h3>
+        <div class="input-wrapper">
+          <textarea 
+            id="followersInput" 
+            placeholder="Вставте JSON дані з файлу followers.json або масив об'єктів..."
+            aria-label="Followers data input"
+          ></textarea>
+        </div>
+      </section>
 
-<button onclick="analyze()">Аналізувати</button>
+      <button type="button" id="analyzeButton" aria-label="Start analysis">
+        Аналізувати
+      </button>
+      <p style="text-align: center; color: var(--text-secondary); font-size: 0.9rem; margin-top: -20px; margin-bottom: 20px;">
+        💡 Натисніть Ctrl+Enter для швидкого аналізу
+      </p>
 
-<div id="results"></div>
+      <div id="results" role="region" aria-label="Analysis results"></div>
+    </main>
+  </div>
 
-<script>
-function extractUsernames(data) {
-  return data.map(item => {
-    const entry = item.string_list_data?.[0];
-    return {
-      username: entry?.value || item.title,
-      href: entry?.href || ''
-    };
-  }).filter(x => x.username);
-}
-
-function analyze() {
-  const followingRaw = JSON.parse(document.getElementById('followingInput').value);
-  const followersRaw = JSON.parse(document.getElementById('followersInput').value);
-
-  const following = extractUsernames(
-    followingRaw.relationships_following || followingRaw
-  );
-
-  const followers = extractUsernames(
-    followersRaw.relationships_followers || followersRaw
-  );
-
-  const followersSet = new Set(followers.map(x => x.username));
-
-  const notFollowingBack = following.filter(
-    x => !followersSet.has(x.username)
-  );
-
-  const results = document.getElementById('results');
-  results.innerHTML = '';
-
-  results.appendChild(createSection(
-    `Following`,
-    following,
-    false
-  ));
-
-  results.appendChild(createSection(
-    `Followers`,
-    followers,
-    false
-  ));
-
-  results.appendChild(createSection(
-    `Не підписані у відповідь`,
-    notFollowingBack,
-    true
-  ));
-}
-
-function createSection(title, data, highlight) {
-  const section = document.createElement('div');
-  section.className = 'section';
-
-  const header = document.createElement('div');
-  header.className = 'section-header';
-  header.innerHTML = `▶ ${title} <span class="count">(${data.length})</span>`;
-
-  const content = document.createElement('div');
-  content.className = 'section-content';
-
-  header.onclick = () => {
-    const open = content.style.display === 'block';
-    content.style.display = open ? 'none' : 'block';
-    header.innerHTML = `${open ? '▶' : '▼'} ${title} <span class="count">(${data.length})</span>`;
-  };
-
-  content.appendChild(createTable(data, highlight));
-
-  section.appendChild(header);
-  section.appendChild(content);
-
-  return section;
-}
-
-function createTable(data, highlight) {
-  const table = document.createElement('table');
-
-  table.innerHTML = `
-    <thead>
-      <tr>
-        <th>Username</th>
-        <th>Link</th>
-      </tr>
-    </thead>
-    <tbody></tbody>
-  `;
-
-  const tbody = table.querySelector('tbody');
-
-  data.forEach(item => {
-    const tr = document.createElement('tr');
-    if (highlight) tr.classList.add('not-following');
-
-    tr.innerHTML = `
-      <td>${item.username}</td>
-      <td><a href="${item.href}" target="_blank">${item.href}</a></td>
-    `;
-    tbody.appendChild(tr);
-  });
-
-  return table;
-}
-</script>
-
+  <script src="script.js"></script>
 </body>
 </html>
